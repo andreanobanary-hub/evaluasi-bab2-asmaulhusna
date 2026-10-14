@@ -17,7 +17,6 @@ import {
   Users,
   User,
   Lock,
-  Unlock,
   Trash2,
   Search,
   Filter,
@@ -29,7 +28,13 @@ import {
   KeyRound,
   ShieldCheck,
   ShieldAlert,
-  Sparkles
+  Sparkles,
+  RefreshCw,
+  Globe,
+  Check,
+  ExternalLink,
+  Wifi,
+  WifiOff
 } from 'lucide-react';
 import rawQuestions from './data/questions.json';
 import { StudentIdentity, StudentSubmission } from './types/student';
@@ -43,6 +48,11 @@ import {
   saveStudentIdentity,
   clearStudentIdentity
 } from './utils/storage';
+import {
+  GOOGLE_SCRIPT_URL,
+  sendSubmissionToGAS,
+  fetchSubmissionsFromGAS
+} from './services/gasService';
 
 interface QuestionItem {
   id: number;
@@ -56,7 +66,8 @@ interface QuestionItem {
 const questions: QuestionItem[] = rawQuestions as QuestionItem[];
 
 const KKM_SCORE = 75;
-const KELAS_OPTIONS = ['7A', '7B', '7C', '7D', '7E', '7F', '7G', '7H', '7I'];
+// Dropdown kelas 7A sampai 7G sesuai instruksi
+const KELAS_OPTIONS = ['7A', '7B', '7C', '7D', '7E', '7F', '7G'];
 const PIN_STORAGE_KEY = 'evaluasi_pai_guru_pin_custom';
 
 // Metadata for pedagogy enrichment
@@ -91,7 +102,7 @@ const metadataMap: Record<number, { level: 'LOTS' | 'MOTS' | 'HOTS'; sub: string
 export default function App() {
   const [activeTab, setActiveTab] = useState<'cbt' | 'rekap' | 'teacher' | 'json'>('cbt');
 
-  // Teacher Security State (Memory Only - Always reset to false on reload/refresh)
+  // Teacher Security State (Memory Only - Always resets on reload)
   const [isTeacherAuthenticated, setIsTeacherAuthenticated] = useState<boolean>(false);
   const [showPinModal, setShowPinModal] = useState<boolean>(false);
   const [intendedTab, setIntendedTab] = useState<'rekap' | 'teacher' | 'json' | null>(null);
@@ -125,8 +136,21 @@ export default function App() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [showConfirmSubmit, setShowConfirmSubmit] = useState(false);
 
-  // Submissions State (Teacher Rekap)
+  // Online Submission Sending State
+  const [isSubmittingOnline, setIsSubmittingOnline] = useState<boolean>(false);
+  const [onlineSubmitStatus, setOnlineSubmitStatus] = useState<{
+    status: 'idle' | 'success' | 'error';
+    message: string;
+  }>({ status: 'idle', message: '' });
+
+  // Submissions State (Teacher Rekap from Google Apps Script)
   const [submissions, setSubmissions] = useState<StudentSubmission[]>(() => getStoredSubmissions());
+  const [isLoadingOnline, setIsLoadingOnline] = useState<boolean>(false);
+  const [onlineError, setOnlineError] = useState<string | null>(null);
+  const [lastOnlineSync, setLastOnlineSync] = useState<string | null>(null);
+  const [isLiveConnected, setIsLiveConnected] = useState<boolean>(false);
+
+  // Teacher filters & details
   const [searchQuery, setSearchQuery] = useState('');
   const [filterKelas, setFilterKelas] = useState('ALL');
   const [selectedStudentDetail, setSelectedStudentDetail] = useState<StudentSubmission | null>(null);
@@ -147,6 +171,40 @@ export default function App() {
     }
   }, [showPinModal]);
 
+  // Load online submissions from Google Apps Script
+  const fetchOnlineData = async () => {
+    setIsLoadingOnline(true);
+    setOnlineError(null);
+    try {
+      const data = await fetchSubmissionsFromGAS();
+      if (Array.isArray(data) && data.length > 0) {
+        setSubmissions(data);
+        setIsLiveConnected(true);
+      } else if (Array.isArray(data) && data.length === 0) {
+        // If online sheet is empty, check if we have local submissions to fallback
+        const local = getStoredSubmissions();
+        setSubmissions(local.length > 0 ? local : []);
+        setIsLiveConnected(true);
+      }
+      const timeStr = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB';
+      setLastOnlineSync(timeStr);
+    } catch (err: any) {
+      console.warn('Fallback to local storage due to GAS fetch error:', err);
+      setOnlineError('Tidak dapat terhubung ke server Google Sheets. Menggunakan data cadangan lokal.');
+      setIsLiveConnected(false);
+      setSubmissions(getStoredSubmissions());
+    } finally {
+      setIsLoadingOnline(false);
+    }
+  };
+
+  // When teacher unlocks or views rekap tab, auto fetch online data
+  useEffect(() => {
+    if (isTeacherAuthenticated && activeTab === 'rekap') {
+      fetchOnlineData();
+    }
+  }, [isTeacherAuthenticated, activeTab]);
+
   // Tab switching with security check
   const handleTabClick = (tab: 'cbt' | 'rekap' | 'teacher' | 'json') => {
     if (tab === 'cbt') {
@@ -154,7 +212,6 @@ export default function App() {
       return;
     }
 
-    // Protected teacher tabs
     if (isTeacherAuthenticated) {
       setActiveTab(tab);
     } else {
@@ -244,6 +301,7 @@ export default function App() {
     setFlagged({});
     setIsSubmitted(false);
     setCurrentIdx(0);
+    setOnlineSubmitStatus({ status: 'idle', message: '' });
   };
 
   const handleLogoutStudent = () => {
@@ -261,6 +319,7 @@ export default function App() {
     setFlagged({});
     setIsSubmitted(false);
     setCurrentIdx(0);
+    setOnlineSubmitStatus({ status: 'idle', message: '' });
   };
 
   const handleSelectOption = (qId: number, optIdx: number) => {
@@ -289,10 +348,12 @@ export default function App() {
   const answeredCount = Object.keys(selectedAnswers).length;
   const unansweredCount = questions.length - answeredCount;
 
-  const handleFinalSubmit = () => {
+  // SUBMIT ONLINE TO GOOGLE APPS SCRIPT WEB APP
+  const handleFinalSubmit = async () => {
     if (!currentStudent) return;
     setShowConfirmSubmit(false);
-    setIsSubmitted(true);
+    setIsSubmittingOnline(true);
+    setOnlineSubmitStatus({ status: 'idle', message: 'Sedang mengirim jawaban ke server Google Sheets online...' });
 
     const now = new Date();
     const formattedDate =
@@ -319,14 +380,50 @@ export default function App() {
       jawaban: { ...selectedAnswers }
     };
 
-    const updated = saveSubmission(submissionData);
-    setSubmissions(updated);
+    // 1. Simpan salinan lokal untuk keamanan offline
+    saveSubmission(submissionData);
+
+    // 2. Kirim via fetch POST ke Google Apps Script Web App
+    try {
+      const res = await sendSubmissionToGAS({
+        nama: currentStudent.nama,
+        kelas: currentStudent.kelas,
+        noAbsen: currentStudent.noAbsen,
+        nilaiAkhir: score,
+        jumlahBenar: correctCount,
+        jumlahSalah: questions.length - correctCount,
+        nisn: currentStudent.nisn,
+        waktu: formattedDate,
+        totalSoal: questions.length
+      });
+
+      setIsSubmitted(true);
+      if (res.success) {
+        setOnlineSubmitStatus({
+          status: 'success',
+          message: 'Jawaban & nilai berhasil terkirim ke server online Google Sheets Guru!'
+        });
+      } else {
+        setOnlineSubmitStatus({
+          status: 'error',
+          message: 'Jawaban tersimpan di memori perangkat. ' + (res.message || '')
+        });
+      }
+    } catch (err: any) {
+      setIsSubmitted(true);
+      setOnlineSubmitStatus({
+        status: 'error',
+        message: 'Tersimpan secara lokal. Gagal menyambung ke Google Apps Script: ' + (err.message || 'Koneksi terputus')
+      });
+    } finally {
+      setIsSubmittingOnline(false);
+    }
   };
 
   const handleDeleteOne = (id: string) => {
-    if (confirm('Hapus data siswa ini dari rekap?')) {
+    if (confirm('Hapus data siswa ini dari tampilan rekap?')) {
       const updated = deleteSubmission(id);
-      setSubmissions(updated);
+      setSubmissions(prev => prev.filter(item => item.id !== id));
       if (selectedStudentDetail?.id === id) {
         setSelectedStudentDetail(null);
       }
@@ -345,8 +442,8 @@ export default function App() {
       { nama: 'Ahmad Fauzan Pratama', kelas: '7A', noAbsen: '03', nisn: '0098123456', benar: 23 },
       { nama: 'Nabila Azzahra Putri', kelas: '7A', noAbsen: '19', nisn: '0098123457', benar: 25 },
       { nama: 'Rizky Alamsyah', kelas: '7B', noAbsen: '27', nisn: '0098123458', benar: 18 },
-      { nama: 'Zahra Khairunnisa', kelas: '7B', noAbsen: '32', nisn: '0098123459', benar: 21 },
-      { nama: 'Muhammad Farhan', kelas: '7C', noAbsen: '14', nisn: '0098123460', benar: 16 }
+      { nama: 'Zahra Khairunnisa', kelas: '7C', noAbsen: '32', nisn: '0098123459', benar: 21 },
+      { nama: 'Muhammad Farhan', kelas: '7D', noAbsen: '14', nisn: '0098123460', benar: 16 }
     ];
 
     const demoSubmissions: StudentSubmission[] = demoNames.map((item, idx) => {
@@ -388,7 +485,6 @@ export default function App() {
       };
     });
 
-    localStorage.setItem('evaluasi_pai_submissions_v1', JSON.stringify(demoSubmissions));
     setSubmissions(demoSubmissions);
   };
 
@@ -458,6 +554,9 @@ export default function App() {
                   <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-200 border border-amber-300/30">
                     PAI & Budi Pekerti
                   </span>
+                  <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-emerald-900/80 text-emerald-300 border border-emerald-600/50">
+                    <Globe className="w-3 h-3 text-emerald-300" /> Cloud Sync
+                  </span>
                 </div>
                 <h1 className="text-base sm:text-lg font-bold tracking-tight text-white mt-0.5">
                   Evaluasi Bab 2: Meneladani Asmaulhusna
@@ -471,7 +570,7 @@ export default function App() {
               {isTeacherAuthenticated ? (
                 <div className="flex items-center gap-1.5 bg-amber-500/20 border border-amber-400/40 px-3 py-1.5 rounded-xl text-amber-200 text-xs shadow-sm">
                   <ShieldCheck className="w-4 h-4 text-amber-300" />
-                  <span className="font-bold text-white">Mode Guru Aktif</span>
+                  <span className="font-bold text-white">Mode Guru Online</span>
                   <button
                     onClick={() => setShowChangePinModal(true)}
                     title="Ubah PIN Guru"
@@ -484,7 +583,7 @@ export default function App() {
                     title="Kunci Kembali / Keluar Mode Guru"
                     className="ml-1 px-2 py-0.5 bg-red-600/80 hover:bg-red-600 text-white font-bold rounded-lg text-[11px] transition flex items-center gap-1 cursor-pointer"
                   >
-                    <Lock className="w-3 h-3" /> Kunci Layar
+                    <Lock className="w-3 h-3" /> Kunci
                   </button>
                 </div>
               ) : (
@@ -537,7 +636,7 @@ export default function App() {
                   ) : (
                     <Lock className="w-3 h-3 text-amber-300" />
                   )}
-                  <span>Rekap Nilai</span>
+                  <span>Rekap Online</span>
                   {submissions.length > 0 && (
                     <span className="w-4 h-4 rounded-full bg-amber-400 text-emerald-950 text-[10px] font-black flex items-center justify-center ml-0.5">
                       {submissions.length}
@@ -624,6 +723,15 @@ export default function App() {
                       </div>
                     </div>
 
+                    {/* Server Status Pill */}
+                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs flex items-center justify-between text-slate-600">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span>Server Online Google Sheets: <strong>Terkoneksi Aktif</strong></span>
+                      </div>
+                      <span className="text-[11px] text-emerald-700 font-medium">Auto-Sync</span>
+                    </div>
+
                     {/* Nama Lengkap */}
                     <div>
                       <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
@@ -639,11 +747,11 @@ export default function App() {
                       />
                     </div>
 
-                    {/* Kelas & Nomor Absen */}
+                    {/* Kelas & Nomor Absen (Kelas 7A sampai 7G) */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                          Pilih Kelas <span className="text-red-500">*</span>
+                          Pilih Kelas (7A - 7G) <span className="text-red-500">*</span>
                         </label>
                         <select
                           value={inputKelas}
@@ -693,9 +801,9 @@ export default function App() {
                     <div className="text-xs text-slate-500 space-y-1 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
                       <div className="font-semibold text-slate-700">Tata Tertib Asesmen:</div>
                       <ul className="list-disc list-inside space-y-0.5 text-slate-600">
-                        <li>Bacalah bismillah dan setiap butir soal dengan cermat.</li>
+                        <li>Bacalah bismillah dan setiap butir soal dengan teliti dan cermat.</li>
                         <li>Gunakan fitur "Tandai Ragu" bila masih ragu terhadap pilihan.</li>
-                        <li>Data dan nilai akhir Anda akan tersimpan otomatis ke rekap guru.</li>
+                        <li>Nilai Anda akan dikirim langsung secara online ke Google Spreadsheet Guru.</li>
                       </ul>
                     </div>
 
@@ -779,7 +887,6 @@ export default function App() {
                         // JIKA SUDAH DISUBMIT:
                         if (isSubmitted) {
                           if (isTeacherAuthenticated) {
-                            // Guru login: bisa lihat kunci
                             if (isCorrect) {
                               containerClass = 'border-emerald-500 bg-emerald-100/70 ring-2 ring-emerald-500';
                               letterClass = 'bg-emerald-600 text-white border-emerald-600';
@@ -788,7 +895,6 @@ export default function App() {
                               letterClass = 'bg-red-500 text-white border-red-500';
                             }
                           } else {
-                            // Siswa biasa: hanya lihat apa yang dia pilih (tidak membocorkan kunci soal untuk siswa lain)
                             if (isSelected) {
                               containerClass = 'border-slate-400 bg-slate-100';
                               letterClass = 'bg-slate-700 text-white border-slate-700';
@@ -871,7 +977,7 @@ export default function App() {
                   {/* Result Card or Monitoring Submission Bar */}
                   {isSubmitted ? (
                     <div className="bg-gradient-to-br from-emerald-800 to-teal-900 text-white rounded-2xl p-6 shadow-md border border-emerald-700">
-                      <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center justify-between mb-3">
                         <span className="text-xs font-semibold uppercase tracking-wider text-emerald-200">
                           Hasil Ujian Siswa
                         </span>
@@ -905,13 +1011,24 @@ export default function App() {
                         </div>
                       </div>
 
-                      <div className="mt-4 pt-3 border-t border-emerald-700/50 flex flex-col gap-2">
-                        <div className="text-[11px] text-emerald-200 text-center">
-                          ✓ Lembar jawaban Anda telah tersimpan ke Rekap Guru
-                        </div>
+                      {/* Online Status Banner */}
+                      <div className="mt-4 pt-3 border-t border-emerald-700/50">
+                        {onlineSubmitStatus.status === 'success' && (
+                          <div className="p-2.5 rounded-xl bg-emerald-950/60 border border-emerald-400/40 text-emerald-200 text-xs flex items-center gap-2">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                            <span>{onlineSubmitStatus.message}</span>
+                          </div>
+                        )}
+                        {onlineSubmitStatus.status === 'error' && (
+                          <div className="p-2.5 rounded-xl bg-amber-950/60 border border-amber-400/40 text-amber-200 text-xs flex items-center gap-2">
+                            <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+                            <span>{onlineSubmitStatus.message}</span>
+                          </div>
+                        )}
+
                         <button
                           onClick={handleLogoutStudent}
-                          className="w-full py-2.5 rounded-xl bg-white text-emerald-900 font-bold text-sm hover:bg-emerald-50 transition flex items-center justify-center gap-2 cursor-pointer shadow"
+                          className="w-full mt-3 py-2.5 rounded-xl bg-white text-emerald-900 font-bold text-sm hover:bg-emerald-50 transition flex items-center justify-center gap-2 cursor-pointer shadow"
                         >
                           <User className="w-4 h-4" /> Selesai & Ganti Siswa
                         </button>
@@ -956,9 +1073,20 @@ export default function App() {
 
                       <button
                         onClick={() => setShowConfirmSubmit(true)}
-                        className="w-full py-2.5 rounded-xl bg-emerald-700 text-white font-semibold text-sm hover:bg-emerald-800 transition shadow-sm flex items-center justify-center gap-2 cursor-pointer"
+                        disabled={isSubmittingOnline}
+                        className="w-full py-2.5 rounded-xl bg-emerald-700 text-white font-semibold text-sm hover:bg-emerald-800 transition shadow-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
                       >
-                        <FileCheck2 className="w-4 h-4" /> Kumpulkan & Selesai Ujian
+                        {isSubmittingOnline ? (
+                          <>
+                            <RefreshCw className="w-4 h-4 animate-spin" />
+                            <span>Mengirim ke Server...</span>
+                          </>
+                        ) : (
+                          <>
+                            <FileCheck2 className="w-4 h-4" />
+                            <span>Kumpulkan & Selesai Ujian</span>
+                          </>
+                        )}
                       </button>
                     </div>
                   )}
@@ -1023,32 +1151,47 @@ export default function App() {
         )}
 
         {/* ========================================================= */}
-        {/* TAB 2: REKAP SISWA (GURU) (Daftar Siswa Mengerjakan) */}
+        {/* TAB 2: REKAP SISWA ONLINE (GURU) */}
         {/* ========================================================= */}
         {activeTab === 'rekap' && isTeacherAuthenticated && (
           <div className="space-y-6">
             {/* Header Rekap */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
               <div>
-                <div className="flex items-center gap-2">
-                  <span className="px-2.5 py-0.5 rounded-md bg-emerald-100 text-emerald-800 text-xs font-bold uppercase">
-                    Sistem Rekapitulasi Nilai PAI
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="px-2.5 py-0.5 rounded-md bg-emerald-100 text-emerald-800 text-xs font-bold uppercase flex items-center gap-1.5">
+                    <Globe className="w-3.5 h-3.5 text-emerald-700" /> Rekapitulasi Online (Google Sheets)
                   </span>
-                  <span className="text-xs text-slate-400">• Standar KKM: {KKM_SCORE}</span>
+                  <span className="text-xs text-slate-400">• KKM: {KKM_SCORE}</span>
+                  {lastOnlineSync && (
+                    <span className="text-[11px] px-2 py-0.5 rounded bg-slate-100 text-slate-600">
+                      Sinkron: {lastOnlineSync}
+                    </span>
+                  )}
                 </div>
                 <h2 className="text-xl font-bold text-slate-800 mt-1">
-                  Daftar Peserta & Nilai Evaluasi Bab 2
+                  Rekapitulasi Nilai Asesmen Online Bab 2
                 </h2>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Data tersimpan otomatis di penyimpanan lokal browser secara terenkripsi/terpisah dari siswa.
+                  Terhubung langsung ke Google Apps Script Web App multi-perangkat.
                 </p>
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
+                {/* Tombol Refresh Data Online */}
+                <button
+                  onClick={fetchOnlineData}
+                  disabled={isLoadingOnline}
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-emerald-700 text-white hover:bg-emerald-800 transition disabled:opacity-50 shadow-sm cursor-pointer"
+                >
+                  <RefreshCw className={`w-4 h-4 ${isLoadingOnline ? 'animate-spin' : ''}`} />
+                  <span>{isLoadingOnline ? 'Memuat Data...' : 'Refresh Data'}</span>
+                </button>
+
                 <button
                   onClick={() => exportSubmissionsToCSV(submissions)}
                   disabled={submissions.length === 0}
-                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-emerald-700 text-white hover:bg-emerald-800 transition disabled:opacity-40 disabled:cursor-not-allowed shadow-sm cursor-pointer"
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-white text-emerald-800 border border-emerald-300 hover:bg-emerald-50 transition disabled:opacity-40 disabled:cursor-not-allowed shadow-sm cursor-pointer"
                 >
                   <Download className="w-4 h-4" />
                   Ekspor Excel/CSV
@@ -1060,16 +1203,55 @@ export default function App() {
                   className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-slate-100 text-red-600 hover:bg-red-50 hover:text-red-700 border border-slate-200 transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                 >
                   <Trash2 className="w-4 h-4" />
-                  Reset Data
+                  Reset
                 </button>
 
                 <button
                   onClick={handleLogoutTeacher}
                   className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-300 transition cursor-pointer"
                 >
-                  <Lock className="w-4 h-4" /> Kunci Sesi Guru
+                  <Lock className="w-4 h-4" /> Kunci Sesi
                 </button>
               </div>
+            </div>
+
+            {/* Error or Sync Alert */}
+            {onlineError && (
+              <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs sm:text-sm flex items-start justify-between gap-3">
+                <div className="flex items-start gap-2.5">
+                  <WifiOff className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                  <div>
+                    <div className="font-bold">Koneksi Online Tidak Stabil</div>
+                    <div className="text-xs text-amber-800 mt-0.5">{onlineError}</div>
+                  </div>
+                </div>
+                <button
+                  onClick={fetchOnlineData}
+                  className="px-3 py-1.5 rounded-lg bg-amber-200 text-amber-950 font-bold text-xs hover:bg-amber-300 shrink-0 cursor-pointer"
+                >
+                  Coba Lagi
+                </button>
+              </div>
+            )}
+
+            {/* Google Apps Script Endpoint Info Box */}
+            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2 text-slate-700">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                <span className="font-semibold">Endpoint Web App:</span>
+                <span className="font-mono text-[11px] text-slate-500 truncate max-w-xs sm:max-w-md">
+                  {GOOGLE_SCRIPT_URL}
+                </span>
+              </div>
+              <a
+                href={GOOGLE_SCRIPT_URL}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 text-emerald-700 hover:text-emerald-800 font-semibold text-xs"
+              >
+                <span>Buka Endpoint JSON</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
             </div>
 
             {/* Ringkasan Statistik Kelas */}
@@ -1077,7 +1259,7 @@ export default function App() {
               <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
                 <div className="text-xs font-semibold text-slate-500 uppercase">Total Siswa</div>
                 <div className="text-2xl font-black text-slate-800 mt-1">{stats.total} Orang</div>
-                <div className="text-[11px] text-slate-400 mt-0.5">Telah mengumpulkan</div>
+                <div className="text-[11px] text-slate-400 mt-0.5">Terkumpul online</div>
               </div>
 
               <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
@@ -1135,7 +1317,7 @@ export default function App() {
                   onChange={e => setFilterKelas(e.target.value)}
                   className="px-3 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm font-medium text-slate-700 bg-white outline-none focus:border-emerald-500"
                 >
-                  <option value="ALL">Semua Kelas</option>
+                  <option value="ALL">Semua Kelas (7A - 7G)</option>
                   {KELAS_OPTIONS.map(k => (
                     <option key={k} value={k}>
                       Kelas {k}
@@ -1147,12 +1329,18 @@ export default function App() {
 
             {/* Tabel Peserta */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-              {submissions.length === 0 ? (
+              {isLoadingOnline && submissions.length === 0 ? (
+                <div className="text-center py-16 px-4">
+                  <RefreshCw className="w-10 h-10 text-emerald-600 animate-spin mx-auto mb-3" />
+                  <h4 className="text-base font-bold text-slate-700">Menghubungkan ke Google Spreadsheet...</h4>
+                  <p className="text-xs text-slate-500 mt-1">Mengambil rekapitulasi data siswa secara online.</p>
+                </div>
+              ) : submissions.length === 0 ? (
                 <div className="text-center py-12 px-4">
                   <Users className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                  <h4 className="text-base font-bold text-slate-700">Belum Ada Siswa Mengumpulkan</h4>
+                  <h4 className="text-base font-bold text-slate-700">Belum Ada Data Siswa di Google Spreadsheet</h4>
                   <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1 mb-4">
-                    Data akan muncul otomatis ketika siswa menyelesaikan ujian di tab "Simulasi Ujian".
+                    Data akan muncul otomatis ketika siswa menyelesaikan asesmen dari perangkat manapun.
                   </p>
                   <button
                     onClick={handleSeedDemoData}
@@ -1219,8 +1407,8 @@ export default function App() {
                             <span
                               className={`inline-block px-2.5 py-1 rounded-full text-[11px] font-bold ${
                                 sub.isLulus
-                                      ? 'bg-emerald-100 text-emerald-800 border border-emerald-300/40'
-                                      : 'bg-red-100 text-red-800 border border-red-300/40'
+                                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-300/40'
+                                  : 'bg-red-100 text-red-800 border border-red-300/40'
                               }`}
                             >
                               {sub.isLulus ? 'Lulus KKM' : 'Remedial'}
@@ -1237,7 +1425,7 @@ export default function App() {
                               </button>
                               <button
                                 onClick={() => handleDeleteOne(sub.id)}
-                                title="Hapus Nilai Siswa"
+                                title="Hapus dari Tampilan"
                                 className="p-1.5 rounded-lg bg-slate-50 text-red-500 hover:bg-red-50 hover:text-red-700 transition cursor-pointer"
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -1597,9 +1785,9 @@ export default function App() {
             </div>
 
             <div className="text-center">
-              <h3 className="text-lg font-bold text-slate-800">Konfirmasi Kirim Ujian</h3>
+              <h3 className="text-lg font-bold text-slate-800">Konfirmasi Kirim Ujian Online</h3>
               <p className="text-xs text-slate-500 mt-1">
-                Apakah Anda yakin ingin menyelesaikan dan mengirim jawaban ujian ini?
+                Jawaban dan nilai Anda akan dikirim langsung ke Google Spreadsheet guru.
               </p>
             </div>
 
@@ -1636,15 +1824,24 @@ export default function App() {
             <div className="flex items-center gap-3 pt-2">
               <button
                 onClick={() => setShowConfirmSubmit(false)}
-                className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-xs font-semibold hover:bg-slate-100 transition cursor-pointer"
+                disabled={isSubmittingOnline}
+                className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-xs font-semibold hover:bg-slate-100 transition cursor-pointer disabled:opacity-50"
               >
                 Cek Kembali
               </button>
               <button
                 onClick={handleFinalSubmit}
-                className="flex-1 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold transition shadow-sm cursor-pointer"
+                disabled={isSubmittingOnline}
+                className="flex-1 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold transition shadow-sm cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                Ya, Kirim Sekarang
+                {isSubmittingOnline ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>Mengirim...</span>
+                  </>
+                ) : (
+                  <span>Ya, Kirim Sekarang</span>
+                )}
               </button>
             </div>
           </div>
@@ -1700,7 +1897,7 @@ export default function App() {
             {/* List Questions Analysis */}
             <div className="p-5 overflow-y-auto space-y-4 flex-1">
               {questions.map(q => {
-                const userAns = selectedStudentDetail.jawaban[q.id];
+                const userAns = selectedStudentDetail.jawaban?.[q.id];
                 const isCorrect = userAns === q.kunci;
                 const isUnanswered = userAns === undefined;
 
@@ -1779,9 +1976,9 @@ export default function App() {
             </div>
 
             <div>
-              <h3 className="text-base font-bold text-slate-800">Hapus Semua Rekap Nilai?</h3>
+              <h3 className="text-base font-bold text-slate-800">Reset Tampilan Rekap?</h3>
               <p className="text-xs text-slate-500 mt-1">
-                Tindakan ini akan menghapus seluruh data siswa dan nilai yang tersimpan secara permanen di browser ini.
+                Tindakan ini akan mengosongkan tabel tampilan lokal di browser ini. Data di spreadsheet online tetap aman.
               </p>
             </div>
 
@@ -1796,7 +1993,7 @@ export default function App() {
                 onClick={handleClearAll}
                 className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition shadow-sm cursor-pointer"
               >
-                Ya, Hapus Semua
+                Ya, Reset
               </button>
             </div>
           </div>

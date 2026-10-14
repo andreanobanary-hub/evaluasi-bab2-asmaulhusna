@@ -1,0 +1,327 @@
+[
+  {
+    "id": 1,
+    "tipe": "pg",
+    "pertanyaan": "Secara bahasa, Asmaulhusna berasal dari dua kata yaitu 'al-asma' yang berarti nama-nama dan 'al-husna' yang berarti...",
+    "opsi": [
+      "paling agung dan kekal",
+      "terbaik, terindah, dan paling sempurna",
+      "paling banyak dan terkenal",
+      "tertinggi dan paling berkuasa"
+    ],
+    "kunci": 1,
+    "bobot": 4
+  },
+  {
+    "id": 2,
+    "tipe": "pg",
+    "pertanyaan": "Perhatikan kutipan firman Allah Swt. berikut: 'Huwallāhul-khāliqul-bāri'ul-muṣawwiru lahul-asmā'ul-ḥusnā...'. Potongan ayat yang menegaskan bahwa Allah memiliki nama-nama yang terbaik tersebut terdapat dalam...",
+    "opsi": [
+      "Q.S. al-Baqarah [2]: 255",
+      "Q.S. al-Ikhlas [112]: 1-4",
+      "Q.S. al-Hasyr [59]: 24",
+      "Q.S. al-A'raf [7]: 180"
+    ],
+    "kunci": 2,
+    "bobot": 4
+  },
+  {
+    "id": 3,
+    "tipe": "pg",
+    "pertanyaan": "Allah Swt. mengetahui segala sesuatu, baik yang kasatmata maupun yang gaib, masa lalu, masa kini, hingga masa yang akan datang. Tidak ada satu pun rahasia di alam semesta yang luput dari pengetahuan-Nya. Hal ini membuktikan bahwa Allah Swt. memiliki sifat...",
+    "opsi": [
+      "al-'Alīm",
+      "al-Khabīr",
+      "as-Samī'",
+      "al-Baṣīr"
+    ],
+    "kunci": 0,
+    "bobot": 4
+  },
+  {
+    "id": 4,
+    "tipe": "pg",
+    "pertanyaan": "Dalam Q.S. Taha [20]: 52 ditegaskan: '...Lā yaḍillu Rabbī wa lā yansā'. Pesan utama dari potongan ayat tersebut terkait sifat al-'Alīm adalah...",
+    "opsi": [
+      "Allah Swt. tidak pernah salah menetapkan takdir dan tidak pernah lupa akan segala sesuatu",
+      "Allah Swt. Maha Mendengar suara yang paling lirih sekalipun",
+      "Allah Swt. menciptakan manusia dari ketiadaan menjadi ada",
+      "Allah Swt. mengampuni semua dosa hamba yang bertobat"
+    ],
+    "kunci": 0,
+    "bobot": 4
+  },
+  {
+    "id": 5,
+    "tipe": "pg",
+    "pertanyaan": "Perhatikan makna ayat berikut: 'Dan pada sisi Allah-lah kunci-kunci semua yang gaib; tidak ada yang mengetahuinya kecuali Dia sendiri, dan Dia mengetahui apa yang ada di darat dan di laut, dan tiada sehelai daun pun yang gugur melainkan Dia mengetahuinya...'. Makna agung ini terdapat dalam dalil al-'Alīm yaitu...",
+    "opsi": [
+      "Q.S. at-Taubah [9]: 16",
+      "Q.S. al-An'am [6]: 59",
+      "Q.S. asy-Syura [42]: 11",
+      "Q.S. al-Hujurat [49]: 18"
+    ],
+    "kunci": 1,
+    "bobot": 4
+  },
+  {
+    "id": 6,
+    "tipe": "pg",
+    "pertanyaan": "Nama indah Allah Swt. 'al-Khabīr' memiliki arti bahwa Allah Swt. Maha...",
+    "opsi": [
+      "Mengetahui segala yang tampak",
+      "Teliti dan mengetahui perkara sedalam-dalamnya hingga hal yang tersembunyi",
+      "Mendengar setiap bisikan hati hamba-Nya",
+      "Melihat perbuatan seluruh makhluk di jagat raya"
+    ],
+    "kunci": 1,
+    "bobot": 4
+  },
+  {
+    "id": 7,
+    "tipe": "pg",
+    "pertanyaan": "Dalam Q.S. at-Taubah [9]: 16 diakhiri dengan penegasan: '...wallāhu khabīrum bimā ta'malūn'. Sikap mental yang harus ditumbuhkan oleh seorang mukmin berdasarkan penegasan ayat ini adalah...",
+    "opsi": [
+      "merasa santai karena dosa kecil pasti diampuni tanpa bertobat",
+      "selalu waspada dan cermat beramal karena niat batiniah diketahui sedetail mungkin oleh Allah",
+      "menuntut ilmu hanya ketika menjelang ujian sekolah",
+      "berbicara lantang agar pendapatnya didengar oleh semua orang"
+    ],
+    "kunci": 1,
+    "bobot": 4
+  },
+  {
+    "id": 8,
+    "tipe": "pg",
+    "pertanyaan": "Pendengaran Allah Swt. tidak dibatasi oleh ruang, jarak, waktu, maupun perantara indra seperti telinga makhluk. Allah Swt. mendengar doa yang diucapkan dalam hati nurani sedalam apa pun. Sifat yang dimaksud adalah...",
+    "opsi": [
+      "al-Muhaimin",
+      "al-'Alīm",
+      "al-Baṣīr",
+      "as-Samī'"
+    ],
+    "kunci": 3,
+    "bobot": 4
+  },
+  {
+    "id": 9,
+    "tipe": "pg",
+    "pertanyaan": "Perhatikan firman Allah Swt. dalam Q.S. asy-Syura [42]: 11: '...Laisa kamitslihī syai'un wa huwas-samī'ul-baṣīr'. Kesimpulan akidah yang benar berdasarkan penggalan ayat tersebut adalah...",
+    "opsi": [
+      "pendengaran dan penglihatan Allah memiliki kemiripan dengan panca indra manusia",
+      "tidak ada sesuatu pun yang serupa dengan Allah, dan Dia Maha Mendengar lagi Maha Melihat",
+      "Allah hanya mendengar doa yang dilafalkan secara keras di tempat ibadah",
+      "penglihatan Allah membutuhkan pantulan cahaya dan alat bantu khusus"
+    ],
+    "kunci": 1,
+    "bobot": 4
+  },
+  {
+    "id": 10,
+    "tipe": "pg",
+    "pertanyaan": "Semut hitam kecil yang berjalan di atas batu hitam pada malam hari yang gelap gulita tidak luput dari pandangan Allah Swt. Ini merupakan permisalan para ulama untuk menjelaskan kesempurnaan sifat...",
+    "opsi": [
+      "al-Khabīr",
+      "al-'Alīm",
+      "al-Baṣīr",
+      "as-Samī'"
+    ],
+    "kunci": 2,
+    "bobot": 4
+  },
+  {
+    "id": 11,
+    "tipe": "pg",
+    "pertanyaan": "Perhatikan firman Allah Swt. dalam Q.S. al-Hujurat [49]: 18 berikut: 'InnaLlāha ya'lamu gaibas-samāwāti wal-arḍ, wallāhu baṣīrum bimā ta'malūn'. Ayat tersebut secara gamblang mengaitkan antara...",
+    "opsi": [
+      "penciptaan langit dan bumi dengan pergantian siang dan malam",
+      "pengetahuan Allah terhadap hal gaib dengan sifat Allah yang Maha Melihat seluruh amal perbuatan hamba-Nya",
+      "perintah berpuasa dengan pengampunan dosa masa lalu",
+      "kewajiban menghormati orang tua dengan keluasan rezeki"
+    ],
+    "kunci": 1,
+    "bobot": 4
+  },
+  {
+    "id": 12,
+    "tipe": "pg",
+    "pertanyaan": "Meskipun sifat al-'Alīm dan al-Khabīr sama-sama berkaitan dengan pengetahuan Allah, perbedaan makna penekanan yang tepat antara keduanya adalah...",
+    "opsi": [
+      "al-'Alīm menekankan pengetahuan lahiriah manusia, sedangkan al-Khabīr hanya berlaku untuk para malaikat",
+      "al-'Alīm menunjukkan keluasan ilmu Allah atas segala sesuatu, sedangkan al-Khabīr menekankan kedalaman dan kecermatan pengetahuan hingga ke rincian yang tersembunyi",
+      "al-'Alīm berlaku di alam dunia saja, sedangkan al-Khabīr baru berlaku saat di akhirat kelak",
+      "al-'Alīm merupakan sifat mustahil bagi Allah, sedangkan al-Khabīr adalah sifat jaiz"
+    ],
+    "kunci": 1,
+    "bobot": 4
+  },
+  {
+    "id": 13,
+    "tipe": "pg",
+    "pertanyaan": "Raihan adalah seorang pelajar kelas VII. Menyadari keterbatasan pengetahuannya dan meyakini bahwa Allah Swt. Maha Mengetahui (al-'Alīm), perilaku terpuji yang semestinya ditunjukkan Raihan adalah...",
+    "opsi": [
+      "merasa cukup dengan ilmu yang telah dimiliki dan enggan bertanya",
+      "selalu rajin belajar, membaca buku yang bermanfaat, dan rendah hati atas prestasi yang diraih",
+      "menganggap semua ilmu umum tidak bernilai ibadah di sisi Allah",
+      "menyembunyikan catatan pelajaran agar tidak ada teman yang menyainginya"
+    ],
+    "kunci": 1,
+    "bobot": 4
+  },
+  {
+    "id": 14,
+    "tipe": "pg",
+    "pertanyaan": "Saat melakukan eksperimen sains di laboratorium madrasah, Nabila mencatat data secara cermat, memeriksa takaran zat berulang kali, dan menelaah sumber kesalahan dalam laporannya sebelum diserahkan kepada guru. Sikap Nabila tersebut merupakan wujud konkret peneladanan Asmaulhusna...",
+    "opsi": [
+      "as-Samī'",
+      "al-Baṣīr",
+      "al-Khabīr",
+      "al-Ahad"
+    ],
+    "kunci": 2,
+    "bobot": 4
+  },
+  {
+    "id": 15,
+    "tipe": "pg",
+    "pertanyaan": "Di sebuah grup WhatsApp kelas, beredar informasi yang menyudutkan salah seorang teman tanpa sumber yang jelas. Sebagai murid yang meneladani sifat al-Khabīr (Maha Teliti), sikap bijak yang harus kamu ambil adalah...",
+    "opsi": [
+      "langsung meneruskan pesan tersebut ke grup lain agar cepat viral",
+      "melakukan tabayun (klarifikasi dan verifikasi) serta tidak terburu-buru menyebarkan berita yang belum pasti kebenarannya",
+      "memprovokasi teman-teman untuk menjauhi siswa yang dibicarakan",
+      "menghapus nomor teman yang menjadi korban gosip"
+    ],
+    "kunci": 1,
+    "bobot": 4
+  },
+  {
+    "id": 16,
+    "tipe": "pg",
+    "pertanyaan": "Seseorang yang sungguh-sungguh meyakini bahwa Allah Swt. bersifat as-Samī' akan sangat berhati-hati dalam...",
+    "opsi": [
+      "mengatur pola makan dan waktu istirahat harian",
+      "memilih warna pakaian saat menghadiri acara resmi",
+      "menjaga lisannya dari kata-kata dusta, makian, dan gosip yang menyakiti hati orang lain",
+      "berjalan di tempat umum agar tidak tersandung batu"
+    ],
+    "kunci": 2,
+    "bobot": 4
+  },
+  {
+    "id": 17,
+    "tipe": "pg",
+    "pertanyaan": "Ketika teman sebangku sedang menceritakan masalah keluarga yang membuatnya sangat sedih, Fikri mendengarkan dengan penuh empati tanpa menyela atau menghakimi. Perilaku Fikri tersebut mencerminkan peneladanan sifat...",
+    "opsi": [
+      "al-Khabīr",
+      "al-'Alīm",
+      "as-Samī'",
+      "al-Baṣīr"
+    ],
+    "kunci": 2,
+    "bobot": 4
+  },
+  {
+    "id": 18,
+    "tipe": "pg",
+    "pertanyaan": "Konsep 'Muraqabah' dalam ajaran Islam lahir dari keimanan yang kuat terhadap sifat Allah al-Baṣīr dan as-Samī'. Pengertian muraqabah yang tepat adalah...",
+    "opsi": [
+      "perasaan yakin dan sadar secara mendalam bahwa dirinya selalu diawasi dan didengar oleh Allah Swt. di mana pun berada",
+      "kebiasaan memantau aktivitas orang lain di media sosial untuk mencari kekurangannya",
+      "sikap mengasingkan diri dari pergaulan masyarakat agar terbebas dari dosa",
+      "perilaku memamerkan amal kebaikan kepada orang banyak agar dipuji"
+    ],
+    "kunci": 0,
+    "bobot": 4
+  },
+  {
+    "id": 19,
+    "tipe": "pg",
+    "pertanyaan": "Saat melaksanakan asesmen sumatif di ruang kelas, pengawas izin keluar ruangan selama lima belas menit. Meskipun ada celah terbuka untuk membuka catatan atau bertanya kepada kawan, Salman tetap fokus mengerjakan secara jujur dan mandiri. Alasan utama sikap Salman karena ia meyakini sifat Allah Swt....",
+    "opsi": [
+      "al-Gaffār dan al-'Afuww",
+      "al-Baṣīr dan al-'Alīm",
+      "ar-Razzāq dan al-Wahhāb",
+      "al-Quddūs dan as-Salām"
+    ],
+    "kunci": 1,
+    "bobot": 4
+  },
+  {
+    "id": 20,
+    "tipe": "pg",
+    "pertanyaan": "Perhatikan beberapa pernyataan perilaku berikut:\n(1) Menggunakan internet untuk mempelajari wawasan ilmu baru yang bermanfaat\n(2) Mengecek ketepatan data dan argumen sebelum mempresentasikan tugas kelompok\n(3) Menghindari kata-kata kotor dan umpatan saat bermain game daring\n(4) Menjaga pandangan dari hal-hal yang diharamkan meski berada di kamar sendirian\nUrutan Asmaulhusna yang diteladani secara berurutan dari pernyataan (1), (2), (3), dan (4) adalah...",
+    "opsi": [
+      "al-'Alīm, al-Khabīr, as-Samī', dan al-Baṣīr",
+      "al-Khabīr, al-'Alīm, al-Baṣīr, dan as-Samī'",
+      "as-Samī', al-Baṣīr, al-'Alīm, dan al-Khabīr",
+      "al-Baṣīr, as-Samī', al-Khabīr, dan al-'Alīm"
+    ],
+    "kunci": 0,
+    "bobot": 4
+  },
+  {
+    "id": 21,
+    "tipe": "pg",
+    "pertanyaan": "Di halte sekolah, Ilham menemukan dompet tebal yang terjatuh di tempat sepi tanpa ada kamera pengawas maupun saksi mata. Ilham segera membawanya dan menyerahkannya kepada petugas keamanan sekolah untuk diumumkan kepada pemiliknya. Tindakan Ilham didorong oleh kesadaran bahwa...",
+    "opsi": [
+      "orang lain pasti akan curiga jika dompet itu ia simpan sendiri",
+      "Allah Swt. al-Baṣīr senantiasa melihat setiap gerak-gerik perbuatannya kapan pun dan di mana pun",
+      "petugas keamanan sekolah akan memberikan hadiah uang penemu dompet",
+      "teman-temannya akan memujinya sebagai siswa teladan"
+    ],
+    "kunci": 1,
+    "bobot": 4
+  },
+  {
+    "id": 22,
+    "tipe": "pg",
+    "pertanyaan": "Rasulullah saw. pernah bersabda mengenai derajat ihsan: 'Engkau beribadah kepada Allah seakan-akan engkau melihat-Nya; jika engkau tidak dapat melihat-Nya, maka sesungguhnya Dia melihatmu.' Hadis ini merupakan landasan spiritual yang sangat erat kaitannya dengan pengamalan Asmaulhusna...",
+    "opsi": [
+      "al-'Alīm dan al-Baṣīr",
+      "al-Malik dan al-Quddūs",
+      "ar-Raḥmān dan ar-Raḥīm",
+      "al-Khāliq dan al-Bāri'"
+    ],
+    "kunci": 0,
+    "bobot": 4
+  },
+  {
+    "id": 23,
+    "tipe": "pg",
+    "pertanyaan": "Berdasarkan kandungan Q.S. al-An'am [6]: 59, sehelai daun yang layu dan gugur di tengah rimba belantara yang pekat tidak pernah lepas dari pengetahuan Allah Swt. Nilai karakter Profil Pelajar Pancasila yang dapat dipetik oleh murid dari perenungan ayat tersebut adalah...",
+    "opsi": [
+      "pesimistis terhadap masa depan karena segala hal sudah tercatat rapi",
+      "beriman, bertakwa kepada Tuhan YME, berakhlak mulia, dan senantiasa memiliki rasa tanggung jawab moral atas setiap perbuatan kecil",
+      "cenderung bersikap pasif dan menunggu nasib tanpa perlu berikhtiar",
+      "mengabaikan kelestarian lingkungan karena alam berjalan dengan sendirinya"
+    ],
+    "kunci": 1,
+    "bobot": 4
+  },
+  {
+    "id": 24,
+    "tipe": "pg",
+    "pertanyaan": "Dalam dunia digital saat ini, komentar kebencian, cyberbullying, dan fitnah sering kali ditulis menggunakan akun anonim (tanpa identitas asli). Seseorang yang meneladani sifat as-Samī' dan al-Baṣīr akan...",
+    "opsi": [
+      "merasa aman berbuat zalim karena identitas aslinya tidak diketahui oleh pihak kepolisian",
+      "tetap santun dan menjaga integritas ketikannya karena yakin Allah Maha Mendengar dan Maha Melihat semua aktivitas digitalnya",
+      "ikut-ikutan menghujat selama tidak ada guru yang mengetahuinya",
+      "menghapus riwayat pencarian peramban agar jejak dosanya hilang di hadapan Allah Swt."
+    ],
+    "kunci": 1,
+    "bobot": 4
+  },
+  {
+    "id": 25,
+    "tipe": "pg",
+    "pertanyaan": "Ketika seseorang mengintegrasikan keteladanan empat Asmaulhusna (al-'Alīm, al-Khabīr, as-Samī', dan al-Baṣīr) dalam kehidupannya sehari-hari, dampak positif yang paling mendasar bagi kepribadiannya adalah...",
+    "opsi": [
+      "terbentuknya pribadi yang berintegritas tinggi, berilmu luas, teliti dalam berkarya, serta terjaga lisan dan perbuatannya",
+      "keinginan untuk selalu tampil di depan publik agar dikenal sebagai orang suci",
+      "sikap merasa lebih unggul secara spiritual dibandingkan dengan orang lain",
+      "rasa takut yang berlebihan hingga tidak berani mengambil keputusan apa pun"
+    ],
+    "kunci": 0,
+    "bobot": 4
+  }
+]

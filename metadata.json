@@ -1,0 +1,8 @@
+{
+  "name": "Evaluasi PAI Bab 2 SMP - Asmaulhusna",
+  "description": "Instrumen Evaluasi Pembelajaran Pilihan Ganda PAI & Budi Pekerti Kelas VII SMP Bab 2: Meneladani Asmaulhusna Kurikulum Merdeka.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

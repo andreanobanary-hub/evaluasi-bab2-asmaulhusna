@@ -213,8 +213,8 @@ export default function App() {
     }
   }, [isTeacherAuthenticated, activeTab]);
 
-  // Tab switching with security check
-  const handleTabClick = (tab: 'cbt' | 'rekap' | 'teacher' | 'json') => {
+  // Tab switching function (Simulasi Ujian, Rekap Online, Bedah Soal, JSON) with PIN protection
+  const switchTab = (tab: 'cbt' | 'rekap' | 'teacher' | 'json') => {
     if (tab === 'cbt') {
       setActiveTab('cbt');
       return;
@@ -227,6 +227,12 @@ export default function App() {
       setShowPinModal(true);
     }
   };
+  const handleTabClick = switchTab;
+
+  // Expose switchTab globally for easy programmatic switching
+  useEffect(() => {
+    (window as any).switchTab = switchTab;
+  }, [isTeacherAuthenticated]);
 
   const handleVerifyPin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -716,35 +722,40 @@ export default function App() {
                   </div>
 
                   <form onSubmit={handleStartExam} className="p-6 sm:p-8 space-y-5">
-                    {/* Info Card Ringkasan Asesmen */}
-                    <div className="grid grid-cols-3 gap-2.5 bg-emerald-50/70 border border-emerald-200 p-3.5 rounded-2xl text-center">
-                      <div>
-                        <div className="text-[11px] text-emerald-700 font-semibold uppercase">Total Soal</div>
-                        <div className="text-base font-bold text-emerald-950">25 Butir PG</div>
+                    {/* 1. KARTU INFORMASI ATAS (3 Kotak Berjejer) */}
+                    <div className="grid grid-cols-3 gap-2.5 bg-emerald-50/80 border border-emerald-200 p-3.5 rounded-2xl text-center shadow-xs">
+                      <div className="flex flex-col items-center justify-center">
+                        <div className="text-[11px] text-emerald-800 font-bold uppercase tracking-wider">TOTAL SOAL</div>
+                        <div className="text-sm sm:text-base font-black text-emerald-950 mt-0.5">25 Butir PG</div>
                       </div>
-                      <div className="border-x border-emerald-200">
-                        <div className="text-[11px] text-emerald-700 font-semibold uppercase">Bobot / Soal</div>
-                        <div className="text-base font-bold text-emerald-950">4 Poin (Max 100)</div>
+                      <div className="flex flex-col items-center justify-center border-x border-emerald-200">
+                        <div className="text-[11px] text-emerald-800 font-bold uppercase tracking-wider">BOBOT / SOAL</div>
+                        <div className="text-sm sm:text-base font-black text-emerald-950 mt-0.5">4 Poin (Max 100)</div>
                       </div>
-                      <div>
-                        <div className="text-[11px] text-emerald-700 font-semibold uppercase">Standar KKM</div>
-                        <div className="text-base font-bold text-emerald-950">75 Poin</div>
+                      <div className="flex flex-col items-center justify-center">
+                        <div className="text-[11px] text-emerald-800 font-bold uppercase tracking-wider">STANDAR KKM</div>
+                        <div className="text-sm sm:text-base font-black text-emerald-950 mt-0.5">75 Poin</div>
                       </div>
                     </div>
 
-                    {/* Server Status Pill */}
-                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs flex items-center justify-between text-slate-600">
+                    {/* 2. INDIKATOR STATUS KONEKSI */}
+                    <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs flex items-center justify-between text-slate-700 shadow-xs">
                       <div className="flex items-center gap-2">
-                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                        <span>Server Online Google Sheets: <strong>Terkoneksi Aktif</strong></span>
+                        <span>🟢</span>
+                        <span className="font-semibold text-slate-800">
+                          Server Online Google Sheets: <strong className="text-emerald-700 font-bold">Terkoneksi Aktif</strong>
+                        </span>
                       </div>
-                      <span className="text-[11px] text-emerald-700 font-medium">Auto-Sync</span>
+                      <span className="text-[11px] font-bold text-emerald-800 bg-emerald-100/90 px-2.5 py-0.5 rounded-full border border-emerald-300">
+                        Auto-Sync
+                      </span>
                     </div>
 
-                    {/* Nama Lengkap */}
+                    {/* 3. FORMULIR IDENTITAS SISWA LENGKAP */}
+                    {/* Field 1: Nama Lengkap */}
                     <div>
                       <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                        Nama Lengkap Siswa <span className="text-red-500">*</span>
+                        NAMA LENGKAP SISWA <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="text"
@@ -752,20 +763,20 @@ export default function App() {
                         value={inputNama}
                         onChange={e => setInputNama(e.target.value)}
                         placeholder="Contoh: Muhammad Rayhan Al-Fatih"
-                        className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm transition"
+                        className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-medium transition shadow-xs"
                       />
                     </div>
 
-                    {/* Kelas & Nomor Absen (Kelas 7A sampai 7G) */}
+                    {/* Baris 2 Kolom (Grid Responsif: Kelas & Nomor Absen) */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                          Pilih Kelas (7A - 7G) <span className="text-red-500">*</span>
+                          PILIH KELAS (7A - 7G) <span className="text-red-500">*</span>
                         </label>
                         <select
                           value={inputKelas}
                           onChange={e => setInputKelas(e.target.value)}
-                          className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm transition bg-white"
+                          className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-medium transition bg-white shadow-xs"
                         >
                           {KELAS_OPTIONS.map(k => (
                             <option key={k} value={k}>
@@ -777,7 +788,7 @@ export default function App() {
 
                       <div>
                         <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                          Nomor Absen <span className="text-red-500">*</span>
+                          NOMOR ABSEN <span className="text-red-500">*</span>
                         </label>
                         <input
                           type="number"
@@ -787,42 +798,45 @@ export default function App() {
                           value={inputNoAbsen}
                           onChange={e => setInputNoAbsen(e.target.value)}
                           placeholder="Contoh: 18"
-                          className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm transition"
+                          className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-medium transition shadow-xs"
                         />
                       </div>
                     </div>
 
-                    {/* NISN (Opsional) */}
+                    {/* Field 3: NIS / NISN (Opsional) */}
                     <div>
                       <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                        NIS / NISN <span className="text-slate-400 font-normal">(Opsional)</span>
+                        NIS / NISN <span className="text-slate-400 font-normal">(OPSIONAL)</span>
                       </label>
                       <input
                         type="text"
                         value={inputNisn}
                         onChange={e => setInputNisn(e.target.value)}
                         placeholder="Contoh: 0098765432"
-                        className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm transition"
+                        className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm font-medium transition shadow-xs"
                       />
                     </div>
 
-                    {/* Petunjuk Singkat */}
-                    <div className="text-xs text-slate-500 space-y-1 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
-                      <div className="font-semibold text-slate-700">Tata Tertib Asesmen:</div>
-                      <ul className="list-disc list-inside space-y-0.5 text-slate-600">
+                    {/* Tata Tertib Asesmen */}
+                    <div className="text-xs text-slate-600 space-y-1.5 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                      <div className="font-bold text-slate-800 flex items-center gap-1.5">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                        <span>Tata Tertib Asesmen:</span>
+                      </div>
+                      <ul className="list-disc list-inside space-y-1 text-slate-600 pl-1">
                         <li>Bacalah bismillah dan setiap butir soal dengan teliti dan cermat.</li>
-                        <li>Gunakan fitur "Tandai Ragu" bila masih ragu terhadap pilihan.</li>
-                        <li>Nilai Anda akan dikirim langsung secara online ke Google Spreadsheet Guru.</li>
+                        <li>Gunakan fitur 'Tandai Ragu' bila masih ragu terhadap pilihan.</li>
                       </ul>
                     </div>
 
-                    {/* Tombol Mulai */}
+                    {/* Tombol Mulai Kerjakan Asesmen (Hijau Mencolok) */}
                     <button
                       type="submit"
                       disabled={!inputNama.trim() || !inputNoAbsen.trim()}
-                      className="w-full py-3.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-sm sm:text-base transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
+                      className="w-full py-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-sm sm:text-base transition duration-150 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
                     >
-                      Mulai Kerjakan Ujian <ArrowRight className="w-5 h-5" />
+                      <span>Mulai Kerjakan Asesmen</span>
+                      <ArrowRight className="w-5 h-5" />
                     </button>
                   </form>
                 </div>

@@ -1,8 +1,8 @@
 import { StudentSubmission } from '../types/student';
 
-// URL Google Apps Script Web App terbaru dari pengguna
+// URL Endpoint Google Apps Script Web App terbaru sesuai permintaan pengguna
 export const GOOGLE_SCRIPT_URL =
-  'https://script.google.com/macros/s/AKfycbyoH90gq_xx2Ksfg47dCjWEohtMRQBXXQ6E4uQwDAQjnN1EDMJkh-I2QGqlle6CrXwB8g/exec';
+  'https://script.google.com/macros/s/AKfycbwTXU2WlZwvAqpV3vVnSUNoKcXdSF1ykCgen889QofQHtCfzsyo_VxlVTIFsEBHZ3Hs/exec';
 
 const CACHE_KEY = 'evaluasi_pai_cached_online_data';
 
@@ -49,8 +49,11 @@ export async function sendSubmissionToGAS(payload: SubmitPayload): Promise<{ suc
     nama: payload.nama,
     kelas: payload.kelas,
     noAbsen: payload.noAbsen,
+    nilai: payload.nilaiAkhir, // Mapping: item.nilai
     nilaiAkhir: payload.nilaiAkhir,
+    benar: payload.jumlahBenar, // Mapping: item.benar
     jumlahBenar: payload.jumlahBenar,
+    salah: payload.jumlahSalah, // Mapping: item.salah
     jumlahSalah: payload.jumlahSalah,
     nisn: payload.nisn || '-',
     waktu: payload.waktu || new Date().toLocaleString('id-ID'),
@@ -98,8 +101,39 @@ export async function sendSubmissionToGAS(payload: SubmitPayload): Promise<{ suc
   }
 }
 
+// Fungsi format waktu aman sesuai ketentuan perbaikan error Invalid time value
+export function formatWaktu(val: any): string {
+  if (!val) return '-';
+  try {
+    const d = new Date(val);
+    if (!isNaN(d.getTime())) {
+      return d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB';
+    }
+  } catch (e) {}
+  // Jika bukan objek Date standar (misal "16/10/2026, 10.30.00"), tampilkan string aslinya langsung
+  const str = String(val).trim();
+  const splitPart = str.split(',')[1];
+  if (splitPart && splitPart.trim()) {
+    const timeOnly = splitPart.trim();
+    return timeOnly.includes('WIB') ? timeOnly : `${timeOnly} WIB`;
+  }
+  return str;
+}
+
+export function safeIsoTimestamp(val: any): string {
+  if (!val) return new Date().toISOString();
+  try {
+    const d = new Date(val);
+    if (!isNaN(d.getTime())) {
+      return d.toISOString();
+    }
+  } catch {}
+  return new Date().toISOString();
+}
+
 /**
  * Fetch all student submissions from Google Apps Script Web App
+ * Membaca respon result.data dengan mapping: nama, kelas, noAbsen, nilai, benar, salah
  * Dilengkapi Timeout 15 detik dan Retry otomatis 1 kali jika lambat/gagal
  */
 export async function fetchSubmissionsFromGAS(): Promise<{
@@ -135,16 +169,16 @@ export async function fetchSubmissionsFromGAS(): Promise<{
 
     let rawList: any[] = [];
 
-    if (Array.isArray(json)) {
-      rawList = json;
-    } else if (json && Array.isArray(json.data)) {
+    // Prioritaskan struktur result.data sesuai instruksi
+    if (json && Array.isArray(json.data)) {
       rawList = json.data;
+    } else if (Array.isArray(json)) {
+      rawList = json;
     } else if (json && Array.isArray(json.result)) {
       rawList = json.result;
     } else if (json && Array.isArray(json.records)) {
       rawList = json.records;
     } else if (json && Array.isArray(json.values)) {
-      // Jika Google Apps Script mengembalikan 2D array baris spreadsheet
       const [headerRow, ...dataRows] = json.values;
       if (Array.isArray(headerRow)) {
         rawList = dataRows.map((row: any[]) => {
@@ -162,50 +196,43 @@ export async function fetchSubmissionsFromGAS(): Promise<{
       }
     }
 
-    // Normalisasi data ke StudentSubmission
+    // Mapping kolom sesuai instruksi:
+    // nama: item.nama
+    // kelas: item.kelas
+    // noAbsen: item.noAbsen
+    // nilai: item.nilai
+    // benar: item.benar
+    // salah: item.salah
     const normalized: StudentSubmission[] = rawList.map((item, idx) => {
-      const nama = item.nama || item.Nama || item.namaSiswa || item['Nama Siswa'] || 'Tanpa Nama';
-      const kelas = item.kelas || item.Kelas || item.kelasSiswa || '-';
-      const noAbsen = String(item.noAbsen || item.NoAbsen || item.absen || item['No. Absen'] || idx + 1);
+      const nama = item.nama ?? item.Nama ?? item.namaSiswa ?? item['Nama Siswa'] ?? 'Tanpa Nama';
+      const kelas = item.kelas ?? item.Kelas ?? item.kelasSiswa ?? '-';
+      const noAbsen = String(item.noAbsen ?? item.NoAbsen ?? item.absen ?? item['No. Absen'] ?? idx + 1);
       const nisn = item.nisn || item.NISN || item.nis || undefined;
 
-      const nilaiAkhir = Number(item.nilaiAkhir ?? item.nilai ?? item.Nilai ?? item.skor ?? item['Nilai Akhir'] ?? 0);
-      const jumlahBenar = Number(item.jumlahBenar ?? item.benar ?? item.Benar ?? Math.round(nilaiAkhir / 4));
-      const jumlahSalah = Number(item.jumlahSalah ?? item.salah ?? item.Salah ?? Math.max(0, 25 - jumlahBenar));
+      // Nilai Akhir: item.nilai
+      const nilaiAkhir = Number(item.nilai ?? item.nilaiAkhir ?? item.Nilai ?? item.skor ?? item['Nilai Akhir'] ?? 0);
+      // Jumlah Benar: item.benar
+      const jumlahBenar = Number(item.benar ?? item.jumlahBenar ?? item.Benar ?? Math.round(nilaiAkhir / 4));
+      // Jumlah Salah: item.salah
+      const jumlahSalah = Number(item.salah ?? item.jumlahSalah ?? item.Salah ?? Math.max(0, 25 - jumlahBenar));
       const totalSoal = 25;
       const terjawab = Math.min(25, jumlahBenar + jumlahSalah);
 
-      const rawTime = item.waktu || item.timestamp || item.Tanggal || item.Waktu || item.Timestamp;
-      let formattedDate = '-';
-      if (rawTime) {
-        try {
-          const d = new Date(rawTime);
-          if (!isNaN(d.getTime())) {
-            formattedDate =
-              d.toLocaleDateString('id-ID', {
-                day: 'numeric',
-                month: 'short',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-              }) + ' WIB';
-          } else {
-            formattedDate = String(rawTime);
-          }
-        } catch {
-          formattedDate = String(rawTime);
-        }
-      } else {
-        formattedDate = new Date().toLocaleDateString('id-ID', {
-          day: 'numeric',
-          month: 'short',
-          year: 'numeric'
-        });
-      }
+      const rawTime =
+        item.waktu ??
+        item.timestamp ??
+        item.Tanggal ??
+        item.Waktu ??
+        item.Timestamp ??
+        item.date ??
+        item.Date;
+
+      const formattedDate = formatWaktu(rawTime);
+      const safeTime = safeIsoTimestamp(rawTime);
 
       return {
         id: item.id || `gas_${idx}_${Date.now()}`,
-        timestamp: rawTime ? new Date(rawTime).toISOString() : new Date().toISOString(),
+        timestamp: safeTime,
         formattedDate,
         student: {
           nama,
@@ -243,7 +270,6 @@ export async function fetchSubmissionsFromGAS(): Promise<{
   } catch (firstErr) {
     console.warn('Request GET pertama gagal, mencoba retry otomatis ke-2...', firstErr);
     try {
-      // Jeda 800ms sebelum retry
       await new Promise(r => setTimeout(r, 800));
       const list = await requestOnce();
       return { submissions: list, fromCache: false };

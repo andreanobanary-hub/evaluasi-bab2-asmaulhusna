@@ -508,19 +508,20 @@ export default function App() {
   }, [submissions, searchQuery, filterKelas]);
 
   const stats = useMemo(() => {
-    if (submissions.length === 0) {
+    const list = filteredSubmissions;
+    if (list.length === 0) {
       return { total: 0, avg: 0, max: 0, min: 0, lulusCount: 0, lulusPercent: 0 };
     }
-    const scores = submissions.map(s => s.nilai);
-    const total = submissions.length;
+    const scores = list.map(s => Number(s.nilai) || 0);
+    const total = list.length;
     const sum = scores.reduce((a, b) => a + b, 0);
     const avg = Math.round(sum / total);
     const max = Math.max(...scores);
     const min = Math.min(...scores);
-    const lulusCount = submissions.filter(s => s.isLulus).length;
+    const lulusCount = list.filter(s => s.isLulus).length;
     const lulusPercent = Math.round((lulusCount / total) * 100);
     return { total, avg, max, min, lulusCount, lulusPercent };
-  }, [submissions]);
+  }, [filteredSubmissions]);
 
   const handleCopyJson = () => {
     navigator.clipboard.writeText(JSON.stringify(questions, null, 2));
@@ -1279,7 +1280,9 @@ export default function App() {
               <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
                 <div className="text-xs font-semibold text-slate-500 uppercase">Total Siswa</div>
                 <div className="text-2xl font-black text-slate-800 mt-1">{stats.total} Orang</div>
-                <div className="text-[11px] text-slate-400 mt-0.5">Terkumpul online</div>
+                <div className="text-[11px] text-slate-400 mt-0.5">
+                  {filterKelas === 'ALL' ? 'Semua kelas online' : `Kelas ${filterKelas}`}
+                </div>
               </div>
 
               <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
@@ -1287,7 +1290,9 @@ export default function App() {
                 <div className="text-2xl font-black text-emerald-700 mt-1">
                   {stats.total > 0 ? stats.avg : '-'}
                 </div>
-                <div className="text-[11px] text-slate-400 mt-0.5">Skala 0 - 100</div>
+                <div className="text-[11px] text-slate-400 mt-0.5">
+                  {filterKelas === 'ALL' ? 'Skala 0 - 100' : `Kelas ${filterKelas}`}
+                </div>
               </div>
 
               <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
@@ -1307,18 +1312,18 @@ export default function App() {
               </div>
 
               <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm col-span-2 md:col-span-1">
-                <div className="text-xs font-semibold text-slate-500 uppercase">Ketuntasan (KKM)</div>
+                <div className="text-xs font-semibold text-slate-500 uppercase">Ketuntasan (KKM 75)</div>
                 <div className="text-2xl font-black text-teal-700 mt-1">
                   {stats.total > 0 ? `${stats.lulusPercent}%` : '-'}
                 </div>
                 <div className="text-[11px] text-slate-400 mt-0.5">
-                  {stats.lulusCount} dari {stats.total} siswa
+                  {stats.lulusCount} dari {stats.total} siswa tuntas
                 </div>
               </div>
             </div>
 
             {/* Filter and Search Bar */}
-            <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-3">
               <div className="relative flex-1">
                 <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
@@ -1330,20 +1335,58 @@ export default function App() {
                 />
               </div>
 
-              <div className="flex items-center gap-2">
-                <Filter className="w-4 h-4 text-slate-400 shrink-0" />
-                <select
-                  value={filterKelas}
-                  onChange={e => setFilterKelas(e.target.value)}
-                  className="px-3 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm font-medium text-slate-700 bg-white outline-none focus:border-emerald-500"
-                >
-                  <option value="ALL">Semua Kelas (7A - 7G)</option>
-                  {KELAS_OPTIONS.map(k => (
-                    <option key={k} value={k}>
-                      Kelas {k}
-                    </option>
-                  ))}
-                </select>
+              {/* Filter Kelas: Tombol Cepat (Semua Kelas, 7E, 7F) & Dropdown Kelas */}
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
+                  <button
+                    onClick={() => setFilterKelas('ALL')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                      filterKelas === 'ALL'
+                        ? 'bg-emerald-700 text-white shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    Semua Kelas
+                  </button>
+                  <button
+                    onClick={() => setFilterKelas('7E')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                      filterKelas === '7E'
+                        ? 'bg-emerald-700 text-white shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    Kelas 7E
+                  </button>
+                  <button
+                    onClick={() => setFilterKelas('7F')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                      filterKelas === '7F'
+                        ? 'bg-emerald-700 text-white shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    Kelas 7F
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <Filter className="w-4 h-4 text-slate-400 shrink-0" />
+                  <select
+                    value={filterKelas}
+                    onChange={e => setFilterKelas(e.target.value)}
+                    className="px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold text-slate-700 bg-white outline-none focus:border-emerald-500 cursor-pointer shadow-xs"
+                  >
+                    <option value="ALL">Semua Kelas</option>
+                    <option value="7E">Kelas 7E</option>
+                    <option value="7F">Kelas 7F</option>
+                    <option value="7A">Kelas 7A</option>
+                    <option value="7B">Kelas 7B</option>
+                    <option value="7C">Kelas 7C</option>
+                    <option value="7D">Kelas 7D</option>
+                    <option value="7G">Kelas 7G</option>
+                  </select>
+                </div>
               </div>
             </div>
 

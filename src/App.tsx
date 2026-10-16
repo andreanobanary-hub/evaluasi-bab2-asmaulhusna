@@ -171,28 +171,36 @@ export default function App() {
     }
   }, [showPinModal]);
 
-  // Load online submissions from Google Apps Script
+  // Load online submissions from Google Apps Script with retry and cache fallback
   const fetchOnlineData = async () => {
     setIsLoadingOnline(true);
     setOnlineError(null);
     try {
-      const data = await fetchSubmissionsFromGAS();
-      if (Array.isArray(data) && data.length > 0) {
-        setSubmissions(data);
+      const result = await fetchSubmissionsFromGAS();
+      setSubmissions(result.submissions);
+
+      if (!result.fromCache) {
+        // Berhasil terhubung 100% online
         setIsLiveConnected(true);
-      } else if (Array.isArray(data) && data.length === 0) {
-        // If online sheet is empty, check if we have local submissions to fallback
-        const local = getStoredSubmissions();
-        setSubmissions(local.length > 0 ? local : []);
-        setIsLiveConnected(true);
+        setOnlineError(null); // Sembunyikan banner error jika sukses
+        const timeStr =
+          new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' WIB';
+        setLastOnlineSync(timeStr);
+      } else {
+        // Fallback ke cache offline
+        setIsLiveConnected(false);
+        setOnlineError('Menampilkan data tersimpan terakhir (Offline). Menghubungkan ulang...');
       }
-      const timeStr = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB';
-      setLastOnlineSync(timeStr);
     } catch (err: any) {
       console.warn('Fallback to local storage due to GAS fetch error:', err);
-      setOnlineError('Tidak dapat terhubung ke server Google Sheets. Menggunakan data cadangan lokal.');
       setIsLiveConnected(false);
-      setSubmissions(getStoredSubmissions());
+      setOnlineError(
+        err?.message || 'Gagal terhubung ke Google Sheets. Silakan periksa koneksi internet atau coba sambungkan lagi.'
+      );
+      const local = getStoredSubmissions();
+      if (local && local.length > 0) {
+        setSubmissions(local);
+      }
     } finally {
       setIsLoadingOnline(false);
     }
@@ -1159,12 +1167,24 @@ export default function App() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
               <div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="px-2.5 py-0.5 rounded-md bg-emerald-100 text-emerald-800 text-xs font-bold uppercase flex items-center gap-1.5">
-                    <Globe className="w-3.5 h-3.5 text-emerald-700" /> Rekapitulasi Online (Google Sheets)
+                  <span
+                    className={`px-2.5 py-0.5 rounded-md text-xs font-bold uppercase flex items-center gap-1.5 ${
+                      isLiveConnected
+                        ? 'bg-emerald-100 text-emerald-800 border border-emerald-300/60'
+                        : 'bg-amber-100 text-amber-900 border border-amber-300/60'
+                    }`}
+                  >
+                    <span
+                      className={`w-2 h-2 rounded-full ${
+                        isLiveConnected ? 'bg-emerald-600 animate-pulse' : 'bg-amber-500'
+                      }`}
+                    ></span>
+                    <Globe className="w-3.5 h-3.5" />
+                    {isLiveConnected ? 'Terhubung Online (Google Sheets)' : 'Mode Offline / Cache Lokal'}
                   </span>
                   <span className="text-xs text-slate-400">• KKM: {KKM_SCORE}</span>
                   {lastOnlineSync && (
-                    <span className="text-[11px] px-2 py-0.5 rounded bg-slate-100 text-slate-600">
+                    <span className="text-[11px] px-2 py-0.5 rounded bg-slate-100 text-slate-600 font-medium">
                       Sinkron: {lastOnlineSync}
                     </span>
                   )}
@@ -1215,21 +1235,21 @@ export default function App() {
               </div>
             </div>
 
-            {/* Error or Sync Alert */}
+            {/* Error or Sync Alert (Hanya muncul jika offline/error) */}
             {onlineError && (
-              <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs sm:text-sm flex items-start justify-between gap-3">
+              <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs sm:text-sm flex items-start justify-between gap-3 shadow-xs">
                 <div className="flex items-start gap-2.5">
                   <WifiOff className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                   <div>
-                    <div className="font-bold">Koneksi Online Tidak Stabil</div>
+                    <div className="font-bold">Koneksi Online Perlu Diperiksa</div>
                     <div className="text-xs text-amber-800 mt-0.5">{onlineError}</div>
                   </div>
                 </div>
                 <button
                   onClick={fetchOnlineData}
-                  className="px-3 py-1.5 rounded-lg bg-amber-200 text-amber-950 font-bold text-xs hover:bg-amber-300 shrink-0 cursor-pointer"
+                  className="px-3.5 py-1.5 rounded-lg bg-amber-200 text-amber-950 font-bold text-xs hover:bg-amber-300 shrink-0 cursor-pointer transition"
                 >
-                  Coba Lagi
+                  Coba Sambungkan Lagi
                 </button>
               </div>
             )}
